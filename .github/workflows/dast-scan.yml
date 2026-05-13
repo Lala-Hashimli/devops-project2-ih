@@ -1,42 +1,13 @@
-name: DAST Scan (OWASP ZAP)
+name: DAST Scan
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-  pull_request:
-    branches:
-      - main
-      - develop
   workflow_dispatch:
 
 jobs:
-  zap-baseline-scan:
-    name: OWASP ZAP Baseline Scan
+  zap-baseline:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Run OWASP ZAP Baseline Scan
-        uses: zaproxy/action-baseline@v0.14.0
+      - name: Run ZAP baseline scan
+        uses: zaproxy/action-baseline@v0.12.0
         with:
-          target: 'https://group4b-demo-appgw.southeastasia.cloudapp.azure.com'
-          rules_file_name: ''
-          cmd_options: '-a'
-          fail_action: false
-          artifact_name: 'zap-report'
-        continue-on-error: true
-        id: zap_scan
-
-      - name: Upload ZAP HTML Report
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: zap-report-${{ github.run_number }}
-          path: report_html.html
-          retention-days: 30
+          target: ${{ secrets.APP_GATEWAY_URL }}

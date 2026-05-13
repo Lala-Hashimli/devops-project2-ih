@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="760" viewBox="0 0 1280 760">
+  <rect width="1280" height="760" fill="#f3f7fb"/>
+  <rect x="40" y="40" width="1200" height="680" rx="28" fill="#ffffff" stroke="#c8d7e6" stroke-width="3"/>
+  <text x="70" y="92" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="700" fill="#16324f">Project 2 Azure 3-Tier Architecture</text>
+  <text x="70" y="126" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#4c667d">Application Gateway is the only public entry point. All compute and database traffic stays private.</text>
+
+  <rect x="86" y="184" width="190" height="88" rx="20" fill="#0b7285"/>
+  <text x="132" y="224" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#ffffff">Internet Users</text>
+  <text x="124" y="250" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#d8f4fa">HTTPS requests</text>
+
+  <rect x="370" y="160" width="260" height="138" rx="24" fill="#14532d"/>
+  <text x="406" y="205" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#ffffff">Application Gateway</text>
+  <text x="430" y="236" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#dcfce7">WAF v2, Public IP, TLS 443</text>
+  <text x="432" y="266" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#dcfce7">/ - frontend</text>
+  <text x="432" y="290" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#dcfce7">/api/* - backend</text>
+
+  <rect x="700" y="118" width="470" height="450" rx="26" fill="#eef6ff" stroke="#9ec5f8" stroke-width="3"/>
+  <text x="734" y="160" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#1d4e89">VNet: vnet-devops-p2-group4c</text>
+  <text x="734" y="188" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#4b6482">Private networking for frontend/backend VMs, private endpoints, and monitoring</text>
+
+  <rect x="748" y="230" width="175" height="120" rx="18" fill="#7c3aed"/>
+  <text x="792" y="276" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#ffffff">Frontend VM</text>
+  <text x="792" y="306" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#f3e8ff">vm-frontend-group4c</text>
+  <text x="788" y="332" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#f3e8ff">Private IP only</text>
+
+  <rect x="949" y="230" width="175" height="120" rx="18" fill="#9d174d"/>
+  <text x="995" y="276" font-family="Segoe UI, Arial, sans-serif" font-size="22" font-weight="700" fill="#ffffff">Backend VM</text>
+  <text x="994" y="306" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#ffe4ef">vm-backend-group4c</text>
+  <text x="990" y="332" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#ffe4ef">Spring Boot API</text>
+
+  <rect x="756" y="412" width="350" height="108" rx="20" fill="#1d4ed8"/>
+  <text x="860" y="452" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#ffffff">Azure SQL Database</text>
+  <text x="820" y="480" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#dbeafe">Private endpoint + private DNS only</text>
+  <text x="844" y="504" font-family="Segoe UI, Arial, sans-serif" font-size="14" fill="#dbeafe">Public network access disabled</text>
+
+  <rect x="370" y="384" width="260" height="136" rx="24" fill="#92400e"/>
+  <text x="425" y="428" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#ffffff">Shared Key Vault</text>
+  <text x="430" y="458" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#ffedd5">kv-shared-group4c</text>
+  <text x="410" y="484" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#ffedd5">agw-cert-group4c certificate</text>
+
+  <rect x="370" y="566" width="260" height="102" rx="24" fill="#334155"/>
+  <text x="422" y="608" font-family="Segoe UI, Arial, sans-serif" font-size="26" font-weight="700" fill="#ffffff">Observability</text>
+  <text x="402" y="638" font-family="Segoe UI, Arial, sans-serif" font-size="15" fill="#e2e8f0">Log Analytics + App Insights + Alerts</text>
+
+  <line x1="276" y1="228" x2="370" y2="228" stroke="#0f172a" stroke-width="4"/>
+  <polygon points="370,228 352,218 352,238" fill="#0f172a"/>
+
+  <line x1="630" y1="228" x2="748" y2="228" stroke="#0f172a" stroke-width="4"/>
+  <line x1="748" y1="228" x2="748" y2="290" stroke="#0f172a" stroke-width="4"/>
+  <polygon points="748,290 738,272 758,272" fill="#0f172a"/>
+
+  <line x1="630" y1="228" x2="949" y2="228" stroke="#0f172a" stroke-width="4"/>
+  <line x1="949" y1="228" x2="949" y2="290" stroke="#0f172a" stroke-width="4"/>
+  <polygon points="949,290 939,272 959,272" fill="#0f172a"/>
+
+  <line x1="1036" y1="350" x2="1036" y2="412" stroke="#0f172a" stroke-width="4"/>
+  <polygon points="1036,412 1026,394 1046,394" fill="#0f172a"/>
+
+  <line x1="500" y1="384" x2="500" y2="298" stroke="#0f172a" stroke-width="4" stroke-dasharray="10 8"/>
+  <polygon points="500,298 490,316 510,316" fill="#0f172a"/>
+
+  <line x1="500" y1="566" x2="500" y2="520" stroke="#0f172a" stroke-width="4" stroke-dasharray="10 8"/>
+  <line x1="500" y1="520" x2="860" y2="520" stroke="#0f172a" stroke-width="4" stroke-dasharray="10 8"/>
+  <line x1="860" y1="520" x2="860" y2="350" stroke="#0f172a" stroke-width="4" stroke-dasharray="10 8"/>
+
+  <text x="88" y="708" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#62748a">Resource names intentionally end with group4c.</text>
+</svg>

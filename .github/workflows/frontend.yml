@@ -1,102 +1,91 @@
-name: Frontend CI-CD
+name: Frontend
 
 on:
   workflow_dispatch:
   push:
+    branches: [ main, master ]
     paths:
-      - 'frontend/**'
-      - '.github/workflows/frontend.yml'
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      - "frontend/**"
+      - ".github/workflows/frontend.yml"
 
 jobs:
   build-test:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: frontend
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
       - name: Setup Node
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          cache: 'npm'
+          node-version: "22"
+          cache: "npm"
           cache-dependency-path: frontend/package-lock.json
 
-      - name: Install Dependencies
+      - name: Install dependencies
+        working-directory: frontend
         run: npm ci
 
-      - name: Run Tests
+      - name: Run tests
+        working-directory: frontend
         run: npm run test -- --run
 
-      - name: Build Frontend
-        run: npm run build
+      - name: Build frontend
+        working-directory: frontend
         env:
-          VITE_API_BASE_URL1: ${{ secrets.VITE_API_BASE_URL1 }}
+          VITE_API_BASE_URL: ${{ secrets.FRONTEND_API_BASE_URL }}
+        run: npm run build
 
-      - name: Archive Frontend Build
-        run: tar -czf frontend-dist.tar.gz dist
+      - name: Archive frontend build
+        run: tar -czf frontend-dist.tar.gz -C frontend dist
 
-      - name: Upload Frontend Artifact
-        uses: actions/upload-artifact@v6
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
-          path: frontend/frontend-dist.tar.gz
-
-  sonar-scan:
-    needs: build-test
-    runs-on: self-hosted
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22'
-
-      - name: Run SonarQube Scan
-        working-directory: frontend
-        run: |
-          npm ci
-          npx sonar-scanner \
-            -Dsonar.projectKey=frontend \
-            -Dsonar.sources=src \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
+          path: frontend-dist.tar.gz
 
   deploy:
-    needs: [build-test, sonar-scan]
+    needs: build-test
     runs-on: self-hosted
-
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v4
 
-      - name: Download Frontend Artifact
-        uses: actions/download-artifact@v5
+      - name: Download frontend artifact
+        uses: actions/download-artifact@v4
         with:
           name: frontend-dist
-          path: /home/azureuser/artifacts/frontend
+          path: .
 
-      - name: Deploy Frontend with Ansible
+      - name: Extract frontend artifact
         run: |
-          cd /home/azureuser/config/ansible
-          ansible-playbook playbooks/frontend.yml
+          rm -rf frontend/dist
+          tar -xzf frontend-dist.tar.gz -C frontend
 
-      - name: Validate Frontend Direct
-        run: curl -I http://10.20.2.4/
+      - name: Ensure Ansible dependencies
+        run: |
+          if ! command -v ansible >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ansible
+          fi
+          if ! command -v sshpass >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y sshpass
+          fi
 
-      
-      - name: Validate API Through HTTPS App Gateway
-        run: curl -I https://group4b-demo-appgw.southeastasia.cloudapp.azure.com/api/ingredients
+      - name: Deploy frontend with Ansible
+        working-directory: config/ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          VM_ADMIN_PASSWORD: ${{ secrets.VM_ADMIN_PASSWORD }}
+          SQL_DB_PASSWORD: ${{ secrets.SQL_DB_PASSWORD }}
+          APP_GATEWAY_HOSTNAME: ${{ secrets.APP_GATEWAY_HOSTNAME }}
+        run: |
+          ansible-playbook playbooks/frontend.yml \
+            -e "ansible_password=$VM_ADMIN_PASSWORD" \
+            -e "db_password=$SQL_DB_PASSWORD" \
+            -e "app_gateway_url=$APP_GATEWAY_HOSTNAME"
 
-      - name: Validate Frontend Through HTTPS App Gateway
-        run: curl -I https://group4b-demo-appgw.southeastasia.cloudapp.azure.com/
+      - name: Validate through Application Gateway
+        run: curl -I "${{ secrets.APP_GATEWAY_URL }}"

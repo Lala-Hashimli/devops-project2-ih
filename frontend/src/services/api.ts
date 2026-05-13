@@ -15,11 +15,7 @@ const normalizeApiBaseUrl = (value?: string): string => {
   return trimmed.replace(/\/api\/?$/, '').replace(/\/+$/, '');
 };
 
-const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL1);
-
-// Debug: Log the API URL to help with troubleshooting
-console.log('API_BASE_URL:', API_BASE_URL);
-console.log('VITE_API_BASE_URL env var:', import.meta.env.VITE_API_BASE_URL1);
+const API_BASE_URL = normalizeApiBaseUrl(import.meta.env.VITE_API_BASE_URL);
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

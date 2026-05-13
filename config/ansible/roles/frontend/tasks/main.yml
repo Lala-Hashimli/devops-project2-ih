@@ -1,3 +1,19 @@
+- name: Determine frontend artifact path on controller
+  set_fact:
+    workspace_root: >-
+      {{
+        lookup('env', 'GITHUB_WORKSPACE')
+        | default(playbook_dir | dirname | dirname | dirname, true)
+      }}
+    frontend_local_dist_path: >-
+      {{
+        frontend_dist_path
+        | default(
+            workspace_root ~ '/frontend/dist',
+            true
+          )
+      }}
+
 - name: Remove default nginx site
   file:
     path: /etc/nginx/sites-enabled/default
@@ -5,7 +21,7 @@
 
 - name: Copy frontend build
   copy:
-    src: "{{ frontend_dist_path }}"
+    src: "{{ frontend_local_dist_path }}/"
     dest: /var/www/html/
     mode: '0755'
 

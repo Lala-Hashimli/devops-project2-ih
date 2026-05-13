@@ -1,58 +1,69 @@
-name: Terraform Infra
+name: Infra
 
 on:
   workflow_dispatch:
-
-env:
-  TF_IN_AUTOMATION: true
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  push:
+    branches: [ main, master ]
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/infra.yml"
 
 jobs:
   terraform:
-    runs-on: self-hosted
-
+    runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
-        working-directory: /home/azureuser/project-group4/infra/terraform
+        working-directory: infra/terraform
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_CLIENT_SECRET: ${{ secrets.ARM_CLIENT_SECRET }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      TF_IN_AUTOMATION: true
 
     steps:
-      - name: Verify Terraform
-        run: terraform version
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Show Current Workspace
-        run: terraform workspace show
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
 
       - name: Terraform Init
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.TFSTATE_RESOURCE_GROUP }}" \
+            -backend-config="storage_account_name=${{ secrets.TFSTATE_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ secrets.TFSTATE_CONTAINER }}" \
+            -backend-config="key=${{ secrets.TFSTATE_KEY }}"
 
-      - name: Terraform Format Check
-        run: terraform fmt -check
+      - name: Terraform Format
+        run: terraform fmt -check -recursive
 
       - name: Terraform Validate
         run: terraform validate
 
-      - name: Terraform Plan
-        id: plan
+      - name: Prepare tfvars
         run: |
-          set +e
-          terraform plan -detailed-exitcode -out=tfplan
-          exitcode=$?
-          echo "exitcode=$exitcode" >> "$GITHUB_OUTPUT"
-          if [ "$exitcode" -eq 1 ]; then
-            echo "Terraform plan failed"
-            exit 1
-          fi
-          exit 0
+          cat > terraform.auto.tfvars <<'EOF'
+          location                          = "canadacentral"
+          environment                       = "dev"
+          name_suffix                       = "group4c"
+          db_admin_username                 = "${{ secrets.SQL_ADMIN_USERNAME }}"
+          db_admin_password                 = "${{ secrets.SQL_DB_PASSWORD }}"
+          vm_admin_username                 = "${{ secrets.VM_ADMIN_USERNAME }}"
+          vm_admin_password                 = "${{ secrets.VM_ADMIN_PASSWORD }}"
+          frontend_allowed_origin           = "${{ secrets.APP_GATEWAY_HOSTNAME }}"
+          app_gateway_certificate_secret_id = "${{ secrets.APP_GATEWAY_CERT_SECRET_ID }}"
+          existing_key_vault_id             = "${{ secrets.APP_GATEWAY_KEY_VAULT_ID }}"
+          frontend_vm_size                  = "Standard_D2s_v3"
+          backend_vm_size                   = "Standard_D2s_v3"
+          sonarqube_vm_size                 = "Standard_D2s_v3"
+          EOF
 
-      - name: Show Plan Result
-        run: |
-          if [ "${{ steps.plan.outputs.exitcode }}" = "0" ]; then
-            echo "No infrastructure changes detected."
-          elif [ "${{ steps.plan.outputs.exitcode }}" = "2" ]; then
-            echo "Infrastructure changes detected."
-          fi
+      - name: Terraform Plan
+        run: terraform plan
 
       - name: Terraform Apply
-        if: github.event_name == 'workflow_dispatch' && steps.plan.outputs.exitcode == '2'
-        run: terraform apply -auto-approve tfplan
+        if: github.event_name == 'workflow_dispatch'
+        run: terraform apply -auto-approve

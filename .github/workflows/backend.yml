@@ -1,23 +1,16 @@
-name: Backend CI-CD
+name: Backend
 
 on:
   workflow_dispatch:
   push:
+    branches: [ main, master ]
     paths:
-      - 'backend/**'
-      - '.github/workflows/backend.yml'
-
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      - "backend/**"
+      - ".github/workflows/backend.yml"
 
 jobs:
-  build-test-sonar:
+  build-test:
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: backend
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,51 +19,55 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
+          cache: maven
 
-      - name: Cache Maven
-        uses: actions/cache@v4
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('backend/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
+      - name: Run backend tests
+        working-directory: backend
+        run: mvn -B clean verify
 
-      - name: Build, Test & SonarQube Scan
-        run: |
-          mvn clean verify sonar:sonar \
-            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-            -Dsonar.token=${{ secrets.SONAR_TOKEN }}
-
-      - name: Upload Backend Artifact
+      - name: Upload backend artifact
         uses: actions/upload-artifact@v4
         with:
           name: backend-jar
           path: backend/target/*.jar
 
   deploy:
-    needs: build-test-sonar
+    needs: build-test
     runs-on: self-hosted
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download Backend Artifact
+      - name: Download backend artifact
         uses: actions/download-artifact@v4
         with:
           name: backend-jar
-          path: /home/azureuser/artifacts/backend
+          path: backend/target
 
-      
-
-      - name: Deploy Backend with Ansible
+      - name: Ensure Ansible dependencies
         run: |
-          cd /home/azureuser/config/ansible
-          ansible-playbook playbooks/backend.yml
+          if ! command -v ansible >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ansible
+          fi
+          if ! command -v sshpass >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y sshpass
+          fi
 
-      - name: Validate Backend Direct
-        run: curl http://20.205.212.128/api/health
+      - name: Deploy backend with Ansible
+        working-directory: config/ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "False"
+          VM_ADMIN_PASSWORD: ${{ secrets.VM_ADMIN_PASSWORD }}
+          SQL_DB_PASSWORD: ${{ secrets.SQL_DB_PASSWORD }}
+          APP_GATEWAY_HOSTNAME: ${{ secrets.APP_GATEWAY_HOSTNAME }}
+        run: |
+          ansible-playbook playbooks/backend.yml \
+            -e "ansible_password=$VM_ADMIN_PASSWORD" \
+            -e "db_password=$SQL_DB_PASSWORD" \
+            -e "app_gateway_url=$APP_GATEWAY_HOSTNAME"
 
-      - name: Validate Through App Gateway
-        run: curl http://20.205.212.128/api/orders/history
+      - name: Validate backend through Application Gateway
+        run: curl "${{ secrets.APP_GATEWAY_URL }}/api/health"
